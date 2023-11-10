@@ -1,0 +1,49 @@
+---
+- name: Install Docker and Docker Compose
+  hosts: all
+  become: true
+  tasks:
+
+  - name: Install required packages
+    apt:
+      name: "{{ packages }}"
+      state: latest
+      update_cache: yes
+    vars:
+      packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+    when: ansible_os_family == "Debian"
+
+  - name: Add Docker’s official GPG key
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+
+  - name: Set up the stable repository
+    apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+      state: present
+
+  - name: Install Docker Engine
+    apt:
+      name: docker-ce
+      state: latest
+      update_cache: yes
+
+  - name: Install Docker Compose
+    get_url:
+      url: https://github.com/docker/compose/releases/download/1.29.2/docker-compose-{{ ansible_system }}-{{ ansible_userspace_architecture }}
+      dest: /usr/local/bin/docker-compose
+      mode: 'u+x,g+x'
+
+  - name: Check Docker Compose version
+    command: docker-compose --version
+    register: compose_version
+    changed_when: false
+
+  - debug:
+      var: compose_version.stdout
